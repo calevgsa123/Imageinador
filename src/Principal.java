@@ -88,6 +88,8 @@ public class Principal {
 				favoritosCont.removeAll();
 				incrementoF=0;
 				File[] archivos = dialogCarpeta.getSelectedFile().listFiles();
+				total_achivos=dialogCarpeta.getSelectedFile().listFiles().length;
+				favoritos_imgs = new Image[total_achivos];
 				for(File iA:archivos) {
 					if(iA.isFile()) {
 						//System.out.println("Archivo: " + iA.getName());
@@ -96,7 +98,7 @@ public class Principal {
 						}
 					}else {
 						//System.out.println("Directorio: " + iA.getName());
-						System.out.println(iA.getName());
+						//System.out.println(iA.getName());
 						crearFavoritos(iA.getName());
 						incrementoF++;
 					}
@@ -108,10 +110,14 @@ public class Principal {
 	
 	public void crearFavoritos(String directorio) {
 		nombrefavoritos=directorio;
-		carpetaImg carpetaFavoritos = new carpetaImg();
+		carpetaImg carpetaFavoritos= new carpetaImg();
+		favoritos_imgs[incrementoF]=extraerImagenDirectorio();
 		carpetaFavoritos.addActionListener(new favoritosClick());
-		favoritosCont.add(carpetaFavoritos);
+		
 		carpetaFavoritos.setLocation(0, incrementoF*100);
+		Icon iconoimg = new ImageIcon(favoritos_imgs[incrementoF]) ;
+		carpetaFavoritos.setIcon(iconoimg);
+		favoritosCont.add(carpetaFavoritos);
 	}
 	class carpetaImg extends JButton{
 		public carpetaImg() {
@@ -119,19 +125,19 @@ public class Principal {
 			setToolTipText(nombrefavoritos);
 			//extraerImagenDirectorio();
 		}
-		public void paintComponent(Graphics g) {
+	/*	public void paintComponent(Graphics g) {
 			
 			try {
 			//imagenFolder = ImageIO.read(new File("src/img/folder.png"));
 				imagenFolder = extraerImagenDirectorio();
 			}finally {}
 			super.paintComponent(g);
-			g.drawImage(imagenFolder, 0, 0,100,100, null);
+			g.drawImage(imagenFolder, 0, 0,100,100, this);
 			
-		}
+		}*/
 	}
 	public void terminaSelect() {
-		favoritos.setSize(100,favoritos.getParent().getHeight()-45);
+		favoritos.setSize(120,favoritos.getParent().getHeight()-145);
 		favoritosCont.setBounds(0, 0, 100, incrementoF*100);
 		if(favoritos.getHeight()<favoritosCont.getHeight()) {
 			favoritos.setSize(120,favoritos.getParent().getHeight()-45);
@@ -211,7 +217,8 @@ public class Principal {
 					imagen = ImageIO.read(new File("src/img/folder.png"));
 					}catch(IOException e) {System.out.println("No img");}
 			}
-			return imagen;
+			Image otra = imagen.getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+			return otra;
 		}
 	private String directorioPrincipal;
 	private JPanel favoritos;
@@ -221,5 +228,7 @@ public class Principal {
 	Image imagenFolder;
 	int incrementoF=0;
 	private String nombrefavoritos;
+	Image favoritos_imgs[];
+	int total_achivos;
 }
  
