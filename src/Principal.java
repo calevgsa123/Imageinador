@@ -8,6 +8,7 @@ import java.awt.image.ImageObserver;
 import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
+import java.util.*;
 
 import javax.swing.ImageIcon;
 
@@ -19,6 +20,7 @@ public class Principal {
 		form1.setTitle("Imagenador");
 		form1.setVisible(true);
 		form1.setExtendedState(JFrame.MAXIMIZED_BOTH);
+		
 	}
 	
 }
@@ -59,7 +61,7 @@ public class Principal {
 		
 		//Panel de carpetas a mover Favoritos
 		favoritos = new JPanel();
-		favoritos.setBackground(Color.PINK);
+		favoritos.setBackground(Color.GRAY);
 		favoritos.setPreferredSize(new Dimension(100,100));
 		favoritos.setLayout(null);
 		add(favoritos,BorderLayout.WEST);
@@ -70,9 +72,43 @@ public class Principal {
 		favoritos.add(barrascroll);
 		
 		//Panel de imagenes miniatura
-		JPanel miniaturas = new JPanel();
+		miniaturas = new JPanel();
 		miniaturas.setBackground(Color.WHITE);
-		add(miniaturas,BorderLayout.SOUTH);		
+		miniaturas.setPreferredSize(new Dimension(100,120));
+		miniaturas.setLayout(null);
+		add(miniaturas,BorderLayout.SOUTH);
+		miniaturasCont = new JPanel();
+		miniaturasCont.setLayout(null);
+		//miniaturasCont.setBounds(0, 0, 500, 500);
+		miniaturas.add(miniaturasCont);
+		barraScrollMin = new JScrollBar(JScrollBar.HORIZONTAL);
+		barraScrollMin.setLocation(0, 100);
+		barraScrollMin.setBounds(0, 100, 10, 20);
+		miniaturas.add(barraScrollMin);
+		
+		//Imagen principal
+		visor = new JPanel();
+		visor.setBackground(Color.CYAN);
+		add(visor,BorderLayout.CENTER);
+		visorCont = new JLabel();
+		visor.add(visorCont);
+		
+	}
+	
+	public class progreso extends JFrame {
+		public progreso() {
+			setTitle("Espere...");
+			setLayout(new BorderLayout());
+			setAlwaysOnTop(true);
+			incrementoG=0;
+			Dimension pantalla = Toolkit.getDefaultToolkit().getScreenSize();
+			setBounds((pantalla.width/2)-150, (pantalla.height/2)-80, 400, 80);
+			barra = new JProgressBar(0,0);
+			barra.setStringPainted(true);
+			barra.setValue(incrementoG);
+			add(barra,BorderLayout.CENTER);
+		}
+
 	}
 	
 	public class selectFolder_click implements ActionListener{
@@ -86,15 +122,24 @@ public class Principal {
 				File directorio = dialogCarpeta.getSelectedFile();
 				directorioPrincipal=directorio.getPath();
 				favoritosCont.removeAll();
+				miniaturasCont.removeAll();
+				imagenesF.clear();
 				incrementoF=0;
+				incrementoI=0;
 				File[] archivos = dialogCarpeta.getSelectedFile().listFiles();
-				total_achivos=dialogCarpeta.getSelectedFile().listFiles().length;
-				favoritos_imgs = new Image[total_achivos];
+				//---------Crea una ventana con una barra de progreso
+				contador = new progreso();
+				contador.setVisible(true);
+				barra.setMaximum(archivos.length);
+				//----------termina de crear la venta
+				
 				for(File iA:archivos) {
 					if(iA.isFile()) {
 						//System.out.println("Archivo: " + iA.getName());
 						if(EsImagen(iA.getName())) {
 							//System.out.println("simon");
+							crearImagenes(iA.getName());
+							incrementoI++;
 						}
 					}else {
 						//System.out.println("Directorio: " + iA.getName());
@@ -102,45 +147,56 @@ public class Principal {
 						crearFavoritos(iA.getName());
 						incrementoF++;
 					}
+					incrementoG++;
+					barra.setValue(incrementoG);
 				}
+				
+				
+				contador.setVisible(false);
 				terminaSelect();
+				cargarImagenPrincipal();
 			}
+		}
+	}
+	
+	public void crearImagenes(String img) {
+		imagenB miniatura = new imagenB(img);
+		miniatura.setLocation(incrementoI*100, 0);
+		try {
+		Image imagenv = ImageIO.read(new File(directorioPrincipal+"\\"+img));
+		Image imagenv2 = imagenv.getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+		miniatura.setIcon(new ImageIcon(imagenv2));
+		}catch(IOException e) {}
+		miniaturasCont.add(miniatura);
+	}
+	
+	class imagenB extends JButton{
+		public imagenB(String img) {
+			setSize(100,100);
+			setToolTipText(img);
 		}
 	}
 	
 	public void crearFavoritos(String directorio) {
 		nombrefavoritos=directorio;
 		carpetaImg carpetaFavoritos= new carpetaImg();
-		favoritos_imgs[incrementoF]=extraerImagenDirectorio();
 		carpetaFavoritos.addActionListener(new favoritosClick());
-		
+		imagenesF.add(extraerImagenDirectorio(directorio));
+		carpetaFavoritos.setIcon(new ImageIcon(imagenesF.get(incrementoF)));
 		carpetaFavoritos.setLocation(0, incrementoF*100);
-		Icon iconoimg = new ImageIcon(favoritos_imgs[incrementoF]) ;
-		carpetaFavoritos.setIcon(iconoimg);
 		favoritosCont.add(carpetaFavoritos);
 	}
 	class carpetaImg extends JButton{
 		public carpetaImg() {
 			setSize(100,100);
 			setToolTipText(nombrefavoritos);
-			//extraerImagenDirectorio();
 		}
-	/*	public void paintComponent(Graphics g) {
-			
-			try {
-			//imagenFolder = ImageIO.read(new File("src/img/folder.png"));
-				imagenFolder = extraerImagenDirectorio();
-			}finally {}
-			super.paintComponent(g);
-			g.drawImage(imagenFolder, 0, 0,100,100, this);
-			
-		}*/
 	}
 	public void terminaSelect() {
-		favoritos.setSize(120,favoritos.getParent().getHeight()-145);
-		favoritosCont.setBounds(0, 0, 100, incrementoF*100);
+		favoritos.setSize(100,favoritos.getParent().getHeight()-155);
+		favoritosCont.setBounds(0, 0, 100, favoritosCont.getComponents().length*100);
 		if(favoritos.getHeight()<favoritosCont.getHeight()) {
-			favoritos.setSize(120,favoritos.getParent().getHeight()-45);
+			favoritos.setSize(120,favoritos.getParent().getHeight()-156);
 			barrascroll.setBounds(100, 0, 20, favoritos.getHeight());
 			barrascroll.addAdjustmentListener(new ScrollingBar());
 			barrascroll.setMinimum(0);
@@ -148,7 +204,23 @@ public class Principal {
 			barrascroll.setValue(0);
 			barrascroll.setUnitIncrement(100);
 		}	
+		miniaturasCont.setSize(miniaturasCont.getComponents().length*100, 100);
 		
+		if(miniaturasCont.getWidth()>miniaturasCont.getParent().getWidth()) {
+			barraScrollMin.setBounds(0, 100, barraScrollMin.getParent().getWidth(), 20);
+			barraScrollMin.setMaximum(miniaturasCont.getWidth()-miniaturasCont.getParent().getWidth());
+			barraScrollMin.addAdjustmentListener(new ScrollingBarH());
+			barraScrollMin.setMinimum(0);
+			barraScrollMin.setValue(0);
+			barraScrollMin.setUnitIncrement(100);
+		}else {
+			barraScrollMin.setBounds(0, 100, barraScrollMin.getParent().getWidth(), 20);
+			barraScrollMin.setMaximum(0);
+			barraScrollMin.setMinimum(0);
+			barraScrollMin.setValue(0);
+			barraScrollMin.setUnitIncrement(100);
+		}
+		miniaturasCont.repaint();
 	}
 	
 	public class ScrollingBar implements AdjustmentListener {
@@ -158,6 +230,15 @@ public class Principal {
 		}
 	}
 	
+	public class ScrollingBarH implements AdjustmentListener{
+
+		@Override
+		public void adjustmentValueChanged(AdjustmentEvent e) {
+			// TODO Auto-generated method stub
+			miniaturasCont.setLocation(-e.getValue(), 0);
+		}
+		
+	}
 	public class favoritosClick implements ActionListener{
 		public void actionPerformed(ActionEvent e) {
 			JButton boton = (JButton)e.getSource();
@@ -197,15 +278,15 @@ public class Principal {
 		return imagen;
 	}
 	
-	public Image extraerImagenDirectorio ()  {
+	public Image extraerImagenDirectorio (String dirboton)  {
 			Image imagen= null;
 			boolean imagenB=true;
-			File directorio = new File(directorioPrincipal + "\\" + nombrefavoritos );
+			File directorio = new File(directorioPrincipal + "\\" + dirboton );
 			if(directorio.list()!=null) {
 				for(String iA:directorio.list()) {
 					if(EsImagen(iA)) {
 						try {
-							imagen = ImageIO.read(new File(directorioPrincipal + "\\" + nombrefavoritos + "\\" + iA ));
+							imagen = ImageIO.read(new File(directorioPrincipal + "\\" + dirboton + "\\" + iA ));
 							imagenB=false;
 							break;
 							}catch(IOException e) {System.out.println("No img");}
@@ -220,6 +301,18 @@ public class Principal {
 			Image otra = imagen.getScaledInstance(100, 100, Image.SCALE_SMOOTH);
 			return otra;
 		}
+	
+	public void cargarImagenPrincipal() {
+		JButton boton = (JButton)miniaturasCont.getComponent(0);
+		try {
+			Image imagen = ImageIO.read(new File(directorioPrincipal+"\\"+boton.getToolTipText()));
+			visorCont.setIcon(new ImageIcon(imagen));
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	private String directorioPrincipal;
 	private JPanel favoritos;
 	private JPanel favoritosCont;
@@ -230,5 +323,15 @@ public class Principal {
 	private String nombrefavoritos;
 	Image favoritos_imgs[];
 	int total_achivos;
+	ArrayList<Image> imagenesF = new ArrayList<Image>();
+	int incrementoG;
+	JProgressBar barra ;
+	progreso contador;
+	private int incrementoI;
+	JPanel miniaturas;
+	JPanel miniaturasCont;
+	JScrollBar barraScrollMin;
+	JPanel visor;
+	JLabel visorCont;
 }
  
