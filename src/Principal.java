@@ -1,5 +1,6 @@
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane.*;
+import javax.swing.border.LineBorder;
 import javax.swing.*;
 import javax.swing.Box.*;
 import java.awt.*;
@@ -8,6 +9,10 @@ import java.awt.image.ImageObserver;
 import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 import javax.swing.ImageIcon;
@@ -46,11 +51,13 @@ public class Principal {
 		menu.add(listaIMG);
 		JButton anterior = new JButton("<");
 		anterior.setToolTipText("Selecciona la imagen anterion a la que estas situado ");
+		anterior.addActionListener(new clickBack());
 		menu.add(anterior);
-		JTextField nombreIMG = new JTextField(15);
+		nombreIMG = new JTextField(15);
 		menu.add(nombreIMG);
 		JButton siguiente = new JButton(">");
 		siguiente.setToolTipText("Muestra la imagen siguiente");
+		siguiente.addActionListener(new cliclForward());
 		menu.add(siguiente);
 		JButton renombrar = new JButton("§");
 		renombrar.setToolTipText("Renombra la imagen con el nombre que acabas de escribir (Enter)");
@@ -87,11 +94,11 @@ public class Principal {
 		miniaturas.add(barraScrollMin);
 		
 		//Imagen principal
-		visor = new JPanel();
+		visorCont = new JLabel();
+		visor = new JScrollPane(visorCont);
 		visor.setBackground(Color.CYAN);
 		add(visor,BorderLayout.CENTER);
-		visorCont = new JLabel();
-		visor.add(visorCont);
+		
 		
 	}
 	
@@ -152,7 +159,7 @@ public class Principal {
 				}
 				
 				
-				contador.setVisible(false);
+				contador.dispose();
 				terminaSelect();
 				cargarImagenPrincipal();
 			}
@@ -162,6 +169,7 @@ public class Principal {
 	public void crearImagenes(String img) {
 		imagenB miniatura = new imagenB(img);
 		miniatura.setLocation(incrementoI*100, 0);
+		miniatura.addActionListener(new miniaturaClick());
 		try {
 		Image imagenv = ImageIO.read(new File(directorioPrincipal+"\\"+img));
 		Image imagenv2 = imagenv.getScaledInstance(100, 100, Image.SCALE_SMOOTH);
@@ -242,7 +250,27 @@ public class Principal {
 	public class favoritosClick implements ActionListener{
 		public void actionPerformed(ActionEvent e) {
 			JButton boton = (JButton)e.getSource();
-			JOptionPane.showMessageDialog(null, boton.getToolTipText(), "mesage", JOptionPane.DEFAULT_OPTION);
+			File imagen = new File(directorioPrincipal+selectedIMG);
+			Path origenPath=FileSystems.getDefault().getPath( directorioPrincipal+"\\"+selectedIMG);
+			Path destinoPath=FileSystems.getDefault().getPath(directorioPrincipal+"\\"+boton.getToolTipText()+"\\"+selectedIMG);
+			try {
+				Files.move(origenPath,destinoPath, StandardCopyOption.REPLACE_EXISTING);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			int i=miniaturasCont.getComponentZOrder(botonSelectIMG);
+			int i1=miniaturasCont.getComponents().length -1;
+			miniaturasCont.remove(botonSelectIMG);
+			reacomodarMiniaturas();
+			if(i==i1) {
+				miniaturaClick  g= new miniaturaClick();
+				g.actionPerformed(new ActionEvent(miniaturasCont.getComponent(i1-1),0,""));
+			}else if( i>=0 && i<i1) {
+				miniaturaClick  g= new miniaturaClick();
+				g.actionPerformed(new ActionEvent(miniaturasCont.getComponent(i),0,""));
+			}
+				
 		}
 		
 	}
@@ -258,7 +286,7 @@ public class Principal {
 				break;
 			}
 		}
-		switch (extencion) {
+		switch (extencion.toLowerCase()) {
 		case ".jpg":
 			imagen = true;
 			break;
@@ -312,7 +340,84 @@ public class Principal {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		barrascroll.repaint();
+		selectedIMG=boton.getToolTipText();
+		botonSelectIMG=boton;
+		botonViejo=boton;
+		botonViejo.setBorder(new LineBorder(Color.GREEN,5));
+		nombreIMG.setText(extrarNombre(boton.getToolTipText()));
 	}
+	
+	
+	class miniaturaClick implements ActionListener{
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			JButton boton = (JButton)e.getSource();
+			try {
+				Image imagen = ImageIO.read(new File(directorioPrincipal+"\\"+boton.getToolTipText()));
+				visorCont.setIcon(new ImageIcon(imagen));
+				
+			} catch (IOException er) {
+				// TODO Auto-generated catch block
+				er.printStackTrace();
+			}
+			favoritos.repaint();
+			selectedIMG=boton.getToolTipText();
+			botonViejo.setBorder(null);
+			botonSelectIMG=boton;
+			botonSelectIMG.setBorder(new LineBorder(Color.GREEN,5));
+			nombreIMG.setText(extrarNombre(boton.getToolTipText()));
+			botonViejo=boton;
+		}
+		
+	}
+	
+	public void reacomodarMiniaturas() {
+		for(int i=0 ;i<miniaturasCont.getComponents().length;i++) {
+			miniaturasCont.getComponent(i).setLocation(i*100, 0);
+		}
+		miniaturasCont.repaint();
+	}
+	public String extrarNombre(String nom) {
+		String respuesta =null;
+		for(int i=nom.length()-1;i>0;i--) {
+			if(nom.charAt(i)=='.') {
+				respuesta= nom.substring(0,i);
+			}
+		}
+		return respuesta;
+	}
+	class clickBack implements ActionListener{
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			int indiceB = miniaturasCont.getComponentZOrder(botonSelectIMG);
+			if (indiceB>0) {
+				botonSelectIMG=(JButton)miniaturasCont.getComponent(indiceB-1);
+				miniaturaClick t=new miniaturaClick();
+				t.actionPerformed(new ActionEvent(botonSelectIMG,0,""));
+			}
+			//JOptionPane.showMessageDialog(null, String.valueOf(indiceB), "ff", 0);
+		}
+		
+	}
+	
+	class cliclForward implements ActionListener{
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			int indiceB = miniaturasCont.getComponentZOrder(botonSelectIMG);
+			if (indiceB<miniaturasCont.getComponents().length-1) {
+				botonSelectIMG=(JButton)miniaturasCont.getComponent(indiceB+1);
+				miniaturaClick t=new miniaturaClick();
+				t.actionPerformed(new ActionEvent(botonSelectIMG,0,""));
+			}
+			//JOptionPane.showMessageDialog(null, String.valueOf(indiceB), "ff", 0);
+		}
+		
+	}
+	
 	private String directorioPrincipal;
 	private JPanel favoritos;
 	private JPanel favoritosCont;
@@ -331,7 +436,11 @@ public class Principal {
 	JPanel miniaturas;
 	JPanel miniaturasCont;
 	JScrollBar barraScrollMin;
-	JPanel visor;
+	JScrollPane visor;
 	JLabel visorCont;
+	String selectedIMG;
+	JButton botonSelectIMG;
+	JTextField nombreIMG;
+	JButton botonViejo;
 }
  
