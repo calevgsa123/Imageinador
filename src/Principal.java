@@ -37,7 +37,7 @@ public class Principal {
 		JPanel menu = new JPanel();
 		menu.setLayout(new FlowLayout(FlowLayout.LEFT));
 		menu.setSize(100, 35);
-		menu.setBackground(Color.MAGENTA);
+		//menu.setBackground(Color.MAGENTA);
 		add(menu,BorderLayout.NORTH);
 		
 		//---------------------------------------------Crea la barra de menus-------------------------------------
@@ -49,21 +49,36 @@ public class Principal {
 		JButton listaIMG = new JButton("Lista");
 		listaIMG.setToolTipText("Muesta una ventana con la lista de imagenes mostrando solo el nombre");
 		menu.add(listaIMG);
-		JButton anterior = new JButton("<");
-		anterior.setToolTipText("Selecciona la imagen anterion a la que estas situado ");
+		anterior = new JButton("<");
+		anterior.setEnabled(false);
+		anterior.setToolTipText("Selecciona la imagen anterion a la que estas situado (F5)");
 		anterior.addActionListener(new clickBack());
 		menu.add(anterior);
-		nombreIMG = new JTextField(15);
+		nombreIMG = new JTextField(20);
+		nombreIMG.setEnabled(false);
 		menu.add(nombreIMG);
-		JButton siguiente = new JButton(">");
-		siguiente.setToolTipText("Muestra la imagen siguiente");
+		siguiente = new JButton(">");
+		siguiente.setToolTipText("Muestra la imagen siguiente (F6)");
 		siguiente.addActionListener(new cliclForward());
+		siguiente.setEnabled(false);
 		menu.add(siguiente);
-		JButton renombrar = new JButton("§");
+		renombrar = new JButton("§");
 		renombrar.setToolTipText("Renombra la imagen con el nombre que acabas de escribir (Enter)");
+		renombrar.addActionListener(new renombrar_click());
+		renombrar.setEnabled(false);
 		menu.add(renombrar);
-		JButton eliminar = new JButton("X");
+		eliminar = new JButton("X");
 		eliminar.setToolTipText("Elimina la imagen (Supr)");
+		eliminar.setBackground(Color.RED);
+		eliminar.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				eliminarImg();
+			}
+			
+		});
+		eliminar.setEnabled(false);
 		menu.add(eliminar);
 		
 		//Panel de carpetas a mover Favoritos
@@ -99,25 +114,154 @@ public class Principal {
 		visor.setBackground(Color.CYAN);
 		add(visor,BorderLayout.CENTER);
 		
-		
+		nombreIMG.addFocusListener(new FocusListener() {
+
+			@Override
+			public void focusGained(FocusEvent e) {
+				nombreIMG.selectAll();
+				
+			}
+
+			@Override
+			public void focusLost(FocusEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			
+		});
+		nombreIMG.addKeyListener(new KeyListener() {
+
+			@Override
+			public void keyTyped(KeyEvent e) {
+				if(e.getKeyChar()=='\\') {
+					Toolkit.getDefaultToolkit().beep();
+					nombreIMG.setBackground(Color.RED);
+				}
+				if(e.getKeyChar()=='/') {
+					Toolkit.getDefaultToolkit().beep();
+					nombreIMG.setBackground(Color.RED);
+				}
+				if(e.getKeyChar()==':') {
+					Toolkit.getDefaultToolkit().beep();
+					nombreIMG.setBackground(Color.RED);
+				}
+				if(e.getKeyChar()=='*') {
+					Toolkit.getDefaultToolkit().beep();
+					nombreIMG.setBackground(Color.RED);
+				}
+				if(e.getKeyChar()=='?') {
+					Toolkit.getDefaultToolkit().beep();
+					nombreIMG.setBackground(Color.RED);
+				}
+				if(e.getKeyChar()=='\"') {
+					Toolkit.getDefaultToolkit().beep();
+					nombreIMG.setBackground(Color.RED);
+				}
+				if(e.getKeyChar()=='<') {
+					Toolkit.getDefaultToolkit().beep();
+					nombreIMG.setBackground(Color.RED);
+				}
+				if(e.getKeyChar()=='>') {
+					Toolkit.getDefaultToolkit().beep();
+					nombreIMG.setBackground(Color.RED);
+				}
+				
+				
+			}
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+				// TODO Auto-generated method stub
+				if(e.getKeyCode()==KeyEvent.VK_ENTER) {
+					renombrarIMG();
+					int indiceB = miniaturasCont.getComponentZOrder(botonSelectIMG);
+					botonSelectIMG=(JButton)miniaturasCont.getComponent(indiceB+1);
+					miniaturaClick t=new miniaturaClick();
+					t.actionPerformed(new ActionEvent(botonSelectIMG,0,""));
+					nombreIMG.selectAll();
+				}
+				
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				// TODO Auto-generated method stub
+				switch(e.getKeyCode()) {
+				case KeyEvent.VK_F6:
+					int indiceB = miniaturasCont.getComponentZOrder(botonSelectIMG);
+					if(indiceB<miniaturasCont.getComponents().length-1) {
+					botonSelectIMG=(JButton)miniaturasCont.getComponent(indiceB+1);
+					miniaturaClick t=new miniaturaClick();
+					t.actionPerformed(new ActionEvent(botonSelectIMG,0,""));
+					}
+					nombreIMG.selectAll();
+					break;
+				case KeyEvent.VK_F5:
+					int indiceB1 = miniaturasCont.getComponentZOrder(botonSelectIMG);
+					if(indiceB1>0) {
+					botonSelectIMG=(JButton)miniaturasCont.getComponent(indiceB1-1);
+					miniaturaClick t1=new miniaturaClick();
+					t1.actionPerformed(new ActionEvent(botonSelectIMG,0,""));
+					}
+					nombreIMG.selectAll();
+					break;
+				case KeyEvent.VK_F8:
+					eliminarImg();
+					break;
+				}
+				if(e.getKeyCode()==8 || e.getKeyCode()==127) {
+					int ce =0;
+					for(int i=0;i<nombreIMG.getText().length();i++) {
+						char ch = nombreIMG.getText().charAt(i);
+						if(ch=='\\'||ch=='/'||ch==':'||ch=='*'||ch=='?'||ch=='\"'||ch=='<'||ch=='>') {
+							ce++;
+						}
+					}
+					if (ce==0)
+					nombreIMG.setBackground(Color.WHITE);
+				}
+			}
+			
+		});
+	}
+	
+	public void renombrarIMG() {
+		String nombreImg = directorioPrincipal + "\\" + selectedIMG;
+		File archivo = new  File(nombreImg);
+		File archivo2 = new  File(directorioPrincipal + "\\" + nombreIMG.getText()+extencion);
+		archivo.renameTo(archivo2);
+		selectedIMG =nombreIMG.getText()+extencion;
+		botonSelectIMG.setToolTipText(nombreIMG.getText()+extencion);
 	}
 	
 	public class progreso extends JFrame {
 		public progreso() {
 			setTitle("Espere...");
+			barra = new JProgressBar(0,0);
 			setLayout(new BorderLayout());
 			setAlwaysOnTop(true);
 			incrementoG=0;
 			Dimension pantalla = Toolkit.getDefaultToolkit().getScreenSize();
 			setBounds((pantalla.width/2)-150, (pantalla.height/2)-80, 400, 80);
-			barra = new JProgressBar(0,0);
 			barra.setStringPainted(true);
 			barra.setValue(incrementoG);
 			add(barra,BorderLayout.CENTER);
+			barra.repaint();
+			barra.revalidate();
 		}
 
 	}
 	
+	class renombrar_click implements ActionListener{
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			renombrarIMG();
+			focusText();
+		}
+		
+	}
 	public class selectFolder_click implements ActionListener{
 
 		public void actionPerformed(ActionEvent e) {
@@ -125,8 +269,8 @@ public class Principal {
 			JFileChooser dialogCarpeta = new JFileChooser();
 			dialogCarpeta.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			int respuesta = dialogCarpeta.showOpenDialog(Form.this);
-			if (respuesta==JFileChooser.APPROVE_OPTION) {
-				File directorio = dialogCarpeta.getSelectedFile();
+			if (respuesta==JFileChooser.APPROVE_OPTION) {//JFileChooser.APPROVE_OPTION
+				File directorio =dialogCarpeta.getSelectedFile();
 				directorioPrincipal=directorio.getPath();
 				favoritosCont.removeAll();
 				miniaturasCont.removeAll();
@@ -139,7 +283,7 @@ public class Principal {
 				contador.setVisible(true);
 				barra.setMaximum(archivos.length);
 				//----------termina de crear la venta
-				
+				 //For de carga de imagenes y favoritos
 				for(File iA:archivos) {
 					if(iA.isFile()) {
 						//System.out.println("Archivo: " + iA.getName());
@@ -156,9 +300,8 @@ public class Principal {
 					}
 					incrementoG++;
 					barra.setValue(incrementoG);
+					barra.repaint();
 				}
-				
-				
 				contador.dispose();
 				terminaSelect();
 				cargarImagenPrincipal();
@@ -201,35 +344,41 @@ public class Principal {
 		}
 	}
 	public void terminaSelect() {
-		favoritos.setSize(100,favoritos.getParent().getHeight()-155);
-		favoritosCont.setBounds(0, 0, 100, favoritosCont.getComponents().length*100);
-		if(favoritos.getHeight()<favoritosCont.getHeight()) {
-			favoritos.setSize(120,favoritos.getParent().getHeight()-156);
-			barrascroll.setBounds(100, 0, 20, favoritos.getHeight());
-			barrascroll.addAdjustmentListener(new ScrollingBar());
-			barrascroll.setMinimum(0);
-			barrascroll.setMaximum(favoritosCont.getHeight()-favoritos.getHeight());
-			barrascroll.setValue(0);
-			barrascroll.setUnitIncrement(100);
-		}	
-		miniaturasCont.setSize(miniaturasCont.getComponents().length*100, 100);
-		
-		if(miniaturasCont.getWidth()>miniaturasCont.getParent().getWidth()) {
-			barraScrollMin.setBounds(0, 100, barraScrollMin.getParent().getWidth(), 20);
-			barraScrollMin.setMaximum(miniaturasCont.getWidth()-miniaturasCont.getParent().getWidth());
-			barraScrollMin.addAdjustmentListener(new ScrollingBarH());
-			barraScrollMin.setMinimum(0);
-			barraScrollMin.setValue(0);
-			barraScrollMin.setUnitIncrement(100);
+		if(incrementoF>0) {
+			favoritosCont.setBounds(0, 0, 100, favoritosCont.getComponents().length*100);
+			if(favoritos.getHeight()<(incrementoF*100)) {
+				favoritos.setPreferredSize(new Dimension(120,favoritos.getParent().getHeight()-155));
+				barrascroll.setBounds(100, 0, 20, favoritos.getHeight());
+				barrascroll.addAdjustmentListener(new ScrollingBar());
+				barrascroll.setMinimum(0);
+				barrascroll.setMaximum(favoritosCont.getHeight()-favoritos.getHeight());
+				barrascroll.setValue(0);
+				barrascroll.setUnitIncrement(100);
+			}	else
+				favoritos.setPreferredSize(new Dimension(100,favoritos.getParent().getHeight()-155));
+			
 		}else {
-			barraScrollMin.setBounds(0, 100, barraScrollMin.getParent().getWidth(), 20);
-			barraScrollMin.setMaximum(0);
-			barraScrollMin.setMinimum(0);
-			barraScrollMin.setValue(0);
-			barraScrollMin.setUnitIncrement(100);
+			favoritos.setPreferredSize(new Dimension(0,favoritos.getParent().getHeight()-155));
 		}
-		miniaturasCont.repaint();
-	}
+			if(miniaturasCont.getWidth()>miniaturasCont.getParent().getWidth()) {
+				barraScrollMin.setBounds(0, 100, barraScrollMin.getParent().getWidth(), 20);
+				barraScrollMin.setMaximum(miniaturasCont.getWidth()-miniaturasCont.getParent().getWidth());
+				barraScrollMin.addAdjustmentListener(new ScrollingBarH());
+				barraScrollMin.setMinimum(0);
+				barraScrollMin.setValue(0);
+				barraScrollMin.setUnitIncrement(100);
+			}else {
+				barraScrollMin.setBounds(0, 100, barraScrollMin.getParent().getWidth(), 20);
+				barraScrollMin.setMaximum(0);
+				barraScrollMin.setMinimum(0);
+				barraScrollMin.setValue(0);
+				barraScrollMin.setUnitIncrement(100);
+			}
+			miniaturasCont.setSize(miniaturasCont.getComponents().length*100, 100);
+			miniaturasCont.repaint();
+		}
+		
+			
 	
 	public class ScrollingBar implements AdjustmentListener {
 		public void adjustmentValueChanged(AdjustmentEvent e) {
@@ -242,7 +391,6 @@ public class Principal {
 
 		@Override
 		public void adjustmentValueChanged(AdjustmentEvent e) {
-			// TODO Auto-generated method stub
 			miniaturasCont.setLocation(-e.getValue(), 0);
 		}
 		
@@ -256,7 +404,6 @@ public class Principal {
 			try {
 				Files.move(origenPath,destinoPath, StandardCopyOption.REPLACE_EXISTING);
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 			int i=miniaturasCont.getComponentZOrder(botonSelectIMG);
@@ -270,11 +417,14 @@ public class Principal {
 				miniaturaClick  g= new miniaturaClick();
 				g.actionPerformed(new ActionEvent(miniaturasCont.getComponent(i),0,""));
 			}
-				
+			focusText();
 		}
 		
 	}
-	
+	public void focusText() {
+		nombreIMG.requestFocus();
+		nombreIMG.selectAll();
+	}
 	public boolean EsImagen(String nombre) {
 		String extencion="";
 		boolean imagen=false;
@@ -331,13 +481,12 @@ public class Principal {
 		}
 	
 	public void cargarImagenPrincipal() {
+		if(miniaturasCont.getComponents().length >0) {
 		JButton boton = (JButton)miniaturasCont.getComponent(0);
 		try {
 			Image imagen = ImageIO.read(new File(directorioPrincipal+"\\"+boton.getToolTipText()));
 			visorCont.setIcon(new ImageIcon(imagen));
-			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		barrascroll.repaint();
@@ -345,12 +494,23 @@ public class Principal {
 		botonSelectIMG=boton;
 		botonViejo=boton;
 		botonViejo.setBorder(new LineBorder(Color.GREEN,5));
-		nombreIMG.setText(extrarNombre(boton.getToolTipText()));
+		nombreIMG.setText(extraerNombre(boton.getToolTipText()));
+		nombreIMG.requestFocus();
+		anterior.setEnabled(true);
+		nombreIMG.setEnabled(true);
+		siguiente.setEnabled(true);
+		renombrar.setEnabled(true);
+		eliminar.setEnabled(true);
+		}else {
+			anterior.setEnabled(false);
+			nombreIMG.setEnabled(false);
+			siguiente.setEnabled(false);
+			renombrar.setEnabled(false);
+			eliminar.setEnabled(false);
+		}
 	}
 	
-	
 	class miniaturaClick implements ActionListener{
-
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			JButton boton = (JButton)e.getSource();
@@ -359,31 +519,33 @@ public class Principal {
 				visorCont.setIcon(new ImageIcon(imagen));
 				
 			} catch (IOException er) {
-				// TODO Auto-generated catch block
 				er.printStackTrace();
 			}
 			favoritos.repaint();
 			selectedIMG=boton.getToolTipText();
-			botonViejo.setBorder(null);
+			botonViejo.setBorder(UIManager.getBorder("Button.border"));
 			botonSelectIMG=boton;
 			botonSelectIMG.setBorder(new LineBorder(Color.GREEN,5));
-			nombreIMG.setText(extrarNombre(boton.getToolTipText()));
+			nombreIMG.setText(extraerNombre(boton.getToolTipText()));
 			botonViejo=boton;
+			focusText();
 		}
-		
 	}
 	
 	public void reacomodarMiniaturas() {
 		for(int i=0 ;i<miniaturasCont.getComponents().length;i++) {
 			miniaturasCont.getComponent(i).setLocation(i*100, 0);
+			miniaturasCont.setSize((i+1)*100, 100);
 		}
 		miniaturasCont.repaint();
 	}
-	public String extrarNombre(String nom) {
+	
+	public String extraerNombre(String nom) {
 		String respuesta =null;
 		for(int i=nom.length()-1;i>0;i--) {
 			if(nom.charAt(i)=='.') {
 				respuesta= nom.substring(0,i);
+				extencion= nom.substring(i,nom.length());
 			}
 		}
 		return respuesta;
@@ -398,7 +560,6 @@ public class Principal {
 				miniaturaClick t=new miniaturaClick();
 				t.actionPerformed(new ActionEvent(botonSelectIMG,0,""));
 			}
-			//JOptionPane.showMessageDialog(null, String.valueOf(indiceB), "ff", 0);
 		}
 		
 	}
@@ -413,9 +574,27 @@ public class Principal {
 				miniaturaClick t=new miniaturaClick();
 				t.actionPerformed(new ActionEvent(botonSelectIMG,0,""));
 			}
-			//JOptionPane.showMessageDialog(null, String.valueOf(indiceB), "ff", 0);
 		}
 		
+	}
+	public void eliminarImg() {
+		int r=JOptionPane.showConfirmDialog(Form.this, "Quieres eliminar esta imagen: "+selectedIMG);
+		if(r==JOptionPane.OK_OPTION) {
+			File archivo = new File(directorioPrincipal+"\\"+selectedIMG);
+			archivo.delete();
+			int i=miniaturasCont.getComponentZOrder(botonSelectIMG);
+			int i1=miniaturasCont.getComponents().length -1;
+			miniaturasCont.remove(botonSelectIMG);
+			reacomodarMiniaturas();
+			if(i==i1) {
+				miniaturaClick  g= new miniaturaClick();
+				g.actionPerformed(new ActionEvent(miniaturasCont.getComponent(i1-1),0,""));
+			}else if( i>=0 && i<i1) {
+				miniaturaClick  g= new miniaturaClick();
+				g.actionPerformed(new ActionEvent(miniaturasCont.getComponent(i),0,""));
+			}
+			focusText();
+		}
 	}
 	
 	private String directorioPrincipal;
@@ -442,5 +621,11 @@ public class Principal {
 	JButton botonSelectIMG;
 	JTextField nombreIMG;
 	JButton botonViejo;
+	String extencion;
+	JButton anterior;
+	JButton siguiente;
+	JButton renombrar;
+	JButton eliminar;
+	
 }
  
