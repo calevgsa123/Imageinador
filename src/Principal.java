@@ -695,26 +695,26 @@ public class Principal {
 	private JPanel favoritos;
 	private JPanel favoritosCont;
 	private JScrollBar barrascroll;
-	int incrementoF=0;
+	private int incrementoF=0;
 	private String nombrefavoritos;
-	int incrementoG;
-	JProgressBar barra ;
-	progreso contador;
+	private int incrementoG;
+	private JProgressBar barra ;
+	private progreso contador;
 	private int incrementoI;
-	JPanel miniaturas;
-	JPanel miniaturasCont;
-	JScrollBar barraScrollMin;
-	JScrollPane visor;
-	JLabel visorCont;
-	String selectedIMG;
-	JButton botonSelectIMG;
-	JTextField nombreIMG;
-	JButton botonViejo;
-	String extencion;
-	JButton anterior;
-	JButton siguiente;
-	JButton renombrar;
-	JButton eliminar;
+	private JPanel miniaturas;
+	private JPanel miniaturasCont;
+	private JScrollBar barraScrollMin;
+	private JScrollPane visor;
+	private JLabel visorCont;
+	private String selectedIMG;
+	private JButton botonSelectIMG;
+	private JTextField nombreIMG;
+	private JButton botonViejo;
+	private String extencion;
+	private JButton anterior;
+	private JButton siguiente;
+	private JButton renombrar;
+	private JButton eliminar;
 	
 }
  
