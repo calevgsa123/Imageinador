@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.swing.ImageIcon;
 
@@ -301,24 +302,30 @@ public class Principal {
 				miniaturasCont.removeAll();
 				incrementoF=0;
 				incrementoI=0;
+				incrementoG=0;
+				arrayImg.clear();
+				arrayDir.clear();
+				imageList.clear();
+				dirList.clear();
 				File[] archivos = dialogCarpeta.getSelectedFile().listFiles();
 				//---------Crea una ventana con una barra de progreso
 				contador = new progreso();
 				contador.setVisible(true);
 				barra.setMaximum(archivos.length);
-				barra.repaint();
 				//----------termina de crear la venta
 				 //For de carga de imagenes y favoritos
 				for(File iA:archivos) {
 					if(iA.isFile()) {
 						//System.out.println("Archivo: " + iA.getName());
 						if(EsImagen(iA.getName())) {
-							crearImagenes(iA.getName());
+							//crearImagenes(iA.getName());
+							arrayImg.add(iA.getName());
 							incrementoI++;
 						}
 					}else {
 						//System.out.println(iA.getName());
-						crearFavoritos(iA.getName());
+						//crearFavoritos(iA.getName());
+						arrayDir.add(iA.getName());
 						incrementoF++;
 					}
 				}
@@ -329,8 +336,9 @@ public class Principal {
 					contador.dispose();
 					JOptionPane.showMessageDialog(Form.this, "Esta carpeta esta vacia");
 				}else {
-				terminaSelect();
-				cargarImagenPrincipal();
+					cargarImgMin();
+				//terminaSelect();
+				//cargarImagenPrincipal();
 				}
 				
 			}
@@ -341,9 +349,9 @@ public class Principal {
 		imagenB miniatura = new imagenB(img);
 		miniatura.setLocation(incrementoI*100, 0);
 		miniatura.addActionListener(new miniaturaClick());
-		botonconimagen r = new botonconimagen(miniatura,img);
+		/*botonconimagen r = new botonconimagen(miniatura,img);
 		Thread t=new Thread(r);
-		t.start();
+		t.start();*/
 		miniaturasCont.add(miniatura);
 	}
 	
@@ -355,25 +363,21 @@ public class Principal {
 	}
 	
 	public void crearFavoritos(String directorio) {
-		nombrefavoritos=directorio;
-		carpetaImg carpetaFavoritos= new carpetaImg();
+		carpetaImg carpetaFavoritos= new carpetaImg(directorio);
 		carpetaFavoritos.addActionListener(new favoritosClick());
-		leerImagenDirectorios r = new leerImagenDirectorios(carpetaFavoritos,directorio);
-		Thread t=new Thread(r);
-		t.start();
 		carpetaFavoritos.setLocation(0, incrementoF*100);
 		favoritosCont.add(carpetaFavoritos);
 	}
 	class carpetaImg extends JButton{
-		public carpetaImg() {
+		public carpetaImg(String nomFavoritos) {
 			setSize(100,100);
-			setToolTipText(nombrefavoritos);
+			setToolTipText(nomFavoritos);
 		}
 	}
 	public void terminaSelect() {
 		if(incrementoF>0) {
 			favoritosCont.setBounds(0, 0, 100, favoritosCont.getComponents().length*100);
-			if(favoritos.getHeight()<(incrementoF*100)) {
+			if(favoritos.getHeight()<(favoritosCont.getComponents().length*100)) {
 				favoritos.setPreferredSize(new Dimension(120,favoritos.getParent().getHeight()-155));
 				barrascroll.setBounds(100, 0, 20, favoritos.getHeight());
 				barrascroll.addAdjustmentListener(new ScrollingBar());
@@ -436,6 +440,7 @@ public class Principal {
 			}
 			int i=miniaturasCont.getComponentZOrder(botonSelectIMG);
 			int i1=miniaturasCont.getComponents().length -1;
+			System.out.print("botonborrar");
 			miniaturasCont.remove(botonSelectIMG);
 			reacomodarMiniaturas();
 			if(i==i1) {
@@ -478,6 +483,12 @@ public class Principal {
 			imagen = true;
 			break;
 		case ".png":
+			imagen = true;
+			break;
+		case ".tif":
+			imagen = true;
+			break;
+		case ".jfif":
 			imagen = true;
 			break;
 		}
@@ -626,25 +637,38 @@ public class Principal {
 		}
 	}
 	
-	class leerImagenDirectorios implements Runnable{
-		public leerImagenDirectorios(JButton boton,String directoriop) {
-			this.directoriop=directoriop;
-			this.boton=boton;
+	private void cargarImgMin() {
+		for(int i =0; i< arrayImg.size();i++) {
+			cargarImgRun r = new cargarImgRun(arrayImg.get(i));
+			Thread t=new Thread(r);
+			t.start();
+			
 		}
-
+		for(int i =0; i< arrayDir.size();i++) {
+			cargarDirRun r = new cargarDirRun(arrayDir.get(i));
+			Thread t=new Thread(r);
+			t.start();
+			
+		}
+	}
+	class cargarDirRun implements Runnable{
+		private cargarDirRun (String nombre) {
+			this.nombre=nombre;
+		}
 		@Override
 		public void run() {
 			Image imagen= null;
 			boolean imagenB=true;
-			File directorio = new File(directorioPrincipal + "\\" + directoriop );
+			File directorio = new File(directorioPrincipal + "\\" + nombre );
 			if(directorio.list()!=null) {
 				for(String iA:directorio.list()) {
 					if(EsImagen(iA)) {
+						lock.lock();
 						try {
-							imagen = ImageIO.read(new File(directorioPrincipal + "\\" + directoriop + "\\" + iA ));
+							imagen = ImageIO.read(new File(directorioPrincipal + "\\" + nombre + "\\" + iA ));
 							imagenB=false;
 							break;
-							}catch(IOException e) {System.out.println("No img");}
+							}catch(IOException e) {System.out.println("No img");}finally {lock.unlock();}
 					}
 				}
 			}
@@ -654,43 +678,85 @@ public class Principal {
 					}catch(IOException e) {System.out.println("No img");}
 			}
 			Image otra = imagen.getScaledInstance(100, 100, Image.SCALE_SMOOTH);
-			boton.setIcon(new ImageIcon(otra));
-			incrementoG++;
-			barra.setValue(incrementoG);
-			barra.repaint();
-			if(incrementoG==barra.getMaximum()) {
-				contador.dispose();
+			dirList.put(nombre, otra);
+			
+			if(incrementoTmp2==arrayDir.size()) {
+				terminaCargarDirRun();//terminaSelect();
 			}
+			incrementoTmp2++;
 		}
-		private String directoriop;
-		private JButton boton;
+		private String nombre;
 	}
-	class botonconimagen implements Runnable{
-		public botonconimagen(JButton boton,String nombre) {
-			this.boton=boton;
+	class cargarImgRun implements Runnable{
+		private cargarImgRun (String nombre) {
 			this.nombre=nombre;
 		}
 
 		@Override
 		public void run() {
-			Image imagen= null;
-			
+			Image imagen=null;
+			lock.lock();
 			try {
 				imagen = ImageIO.read(new File(directorioPrincipal + "\\" + nombre ));
-				}catch(IOException e) {System.out.println("No img");}
-		Image otra = imagen.getScaledInstance(100, 100, Image.SCALE_SMOOTH);
-		boton.setIcon(new ImageIcon(otra));
+					}catch(IOException e) {System.out.println("No img");}finally {lock.unlock();}
+			Image otra = imagen.getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+			imageList.put(nombre,otra);
+			incrementoTmp++;
+			if(incrementoTmp==arrayImg.size()) {
+				terminaCargarImgRun();//terminaSelect();
+			}
+			
+		}
+		private String nombre;
+		
+	}
+	private void terminaCargarImgRun() {
+		/*do
+		{System.out.println(imageList.size());
+		System.out.println(arrayImg.size());}while(imageList.size()!= arrayImg.size());*/
+		for (int i=0;i<arrayImg.size();i++) {
+		String	img=arrayImg.get(i);
+		imagenB miniatura = new imagenB(img);
+		miniatura.setLocation(i*100, 0);
+		miniatura.addActionListener(new miniaturaClick());
+		
+		
+		miniatura.setIcon(new ImageIcon(imageList.get(img)));
+		
+		miniaturasCont.add(miniatura);
 		incrementoG++;
+		llenarBarra(incrementoG);
+		}
+	}
+	
+	private void terminaCargarDirRun() {
+		/*do
+		{System.out.println(arrayDir.size());
+		System.out.println(dirList.size());}while(arrayDir.size()!= dirList.size());*/
+		for(int i=0;i<arrayDir.size();i++) {
+			String dir = arrayDir.get(i);
+			carpetaImg carpetaFavoritos= new carpetaImg(dir);
+			carpetaFavoritos.addActionListener(new favoritosClick());
+			carpetaFavoritos.setLocation(0, i*100);
+			
+			
+			carpetaFavoritos.setIcon(new ImageIcon(dirList.get(dir)));
+			
+			favoritosCont.add(carpetaFavoritos);
+			incrementoG++;
+			llenarBarra(incrementoG);
+		}
+	}
+	
+	private void llenarBarra(int valor) {
 		barra.setValue(incrementoG);
 		barra.repaint();
 		if(incrementoG==barra.getMaximum()) {
 			contador.dispose();
+			terminaSelect();
+			cargarImagenPrincipal();
 		}
-		}
-		private JButton boton;
-		private String nombre;
 	}
-
 	private String directorioPrincipal;
 	private JPanel favoritos;
 	private JPanel favoritosCont;
@@ -716,5 +782,15 @@ public class Principal {
 	private JButton renombrar;
 	private JButton eliminar;
 	
+	private ArrayList<String> arrayDir = new ArrayList<String>();
+	private ArrayList<String> arrayImg = new ArrayList<String>();
+	private HashMap<String,Image> imageList= new HashMap<String,Image>();
+	private HashMap<String,Image> dirList= new HashMap<String,Image>();
+	private int incrementoTmp=1;
+	private int incrementoTmp2=1;
+	
+	  private final ReentrantLock lock = new ReentrantLock();
+	  
+	  //Reemplazar un archivo existente a la hora de mover a favoritos o renombrar
 }
  
